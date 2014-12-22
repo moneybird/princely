@@ -8,7 +8,7 @@ describe Princely::Pdf do
   end
 
   it "generates a PDF from HTML" do
-    pending 'does not work with travis'
+    #pending 'does not work with travis'
 
     pdf = Princely::Pdf.new.pdf_from_string html_doc
     pdf.should start_with("%PDF-1.4")
@@ -72,6 +72,12 @@ describe Princely::Pdf do
       prince = Princely::Pdf.new(:path => '/tmp/fake', :media => "print_special")
       prince.stub(:log_file).and_return('/tmp/test_log')
       prince.exe_path.should == "/tmp/fake --input=html --server --log=/tmp/test_log --media=print_special "
+    end
+
+    it "enables javascript" do
+      prince = Princely::Pdf.new(:path => '/tmp/fake', :javascript => true)
+      prince.stub(:log_file).and_return('/tmp/test_log')
+      prince.exe_path.should == "/tmp/fake --input=html --server --log=/tmp/test_log --javascript "
     end
   end
 end

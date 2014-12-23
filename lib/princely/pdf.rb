@@ -86,9 +86,10 @@ module Princely
       # as input and output
       path << " --media=#{media}" if media
       path << " --silent - -o #{output_file}"
+      path << " --javascript" if @javascript
       path << " >> '#{log_file}' 2>> '#{log_file}'" if options[:output_to_log_file]
 
-      log_command path if options[:log_command]
+      log_command(path, string) if options[:log_command]
 
       # Actually call the prince command, and pass the entire data stream back.
       pdf = IO.popen(path, "w+")
@@ -96,9 +97,10 @@ module Princely
       pdf
     end
 
-    def log_command(path)
+    def log_command(path, source=nil)
       logger.info "\n\nPRINCE XML PDF COMMAND"
       logger.info path
+      #logger.debug source if source
       logger.info ''
     end
   end

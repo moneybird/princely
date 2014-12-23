@@ -27,7 +27,7 @@ module Princely
         :relative_paths => true,
         :server_flag => false,
         :media => nil,
-        :javascript => false
+        :javascript => true
       }.merge(options)
 
       prince = Princely::Pdf.new(options.slice(:server_flag, :media, :javascript))

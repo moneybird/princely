@@ -12,7 +12,7 @@ module Princely
         :logger => nil,
         :server_flag => false,
         :media => nil,
-        :javascript => false
+        :javascript => true
       }.merge(options)
       @executable = options[:path] ? Princely::Executable.new(options[:path]) : options[:executable]
       @style_sheets = ''

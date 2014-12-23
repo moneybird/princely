@@ -60,24 +60,24 @@ describe Princely::Pdf do
     end
 
     it "appends default options" do
-      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log "
+      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log --javascript "
     end
 
     it "adds stylesheet paths" do
       prince.style_sheets = " -s test.css "
-      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log  -s test.css "
+      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log --javascript  -s test.css "
     end
 
     it "adds the media type" do
       prince = Princely::Pdf.new(:path => '/tmp/fake', :media => "print_special")
       prince.stub(:log_file).and_return('/tmp/test_log')
-      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log --media=print_special "
+      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log --media=print_special --javascript "
     end
 
-    it "enables javascript" do
-      prince = Princely::Pdf.new(:path => '/tmp/fake', :javascript => true)
+    it "disables javascript" do
+      prince = Princely::Pdf.new(:path => '/tmp/fake', :javascript => false)
       prince.stub(:log_file).and_return('/tmp/test_log')
-      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log --javascript "
+      prince.exe_path.should == "/tmp/fake --input=html --log=/tmp/test_log "
     end
   end
 end

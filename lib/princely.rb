@@ -24,6 +24,7 @@ module Princely
   autoload :Pdf,          'princely/pdf'
   autoload :Logging,      'princely/logging'
   autoload :Executable,   'princely/executable'
+  autoload :RenderError,   'princely/render_error'
 
   class << self
     def executable

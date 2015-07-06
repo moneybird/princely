@@ -75,13 +75,7 @@ module Princely
       result.force_encoding('BINARY') if RUBY_VERSION >= "1.9"
 
       if errors.present?
-        puts "Log it to a logfile if required"
-
-        prince_errors = errors.scan(/^prince:\s(.*)$/).join("\n")
-
-        if prince_errors.present?
-          puts "Got some errors: #{prince_errors}"
-        end
+        handle_render_errors(errors)
       end
 
       result
@@ -93,7 +87,7 @@ module Princely
       errs.close
 
       if errors.present?
-        puts "HERE TOO some errors: #{errors}"
+        handle_render_errors(errors)
       end
 
       pdf
@@ -123,6 +117,16 @@ module Princely
       logger.info path
       #logger.debug source if source
       logger.info ''
+    end
+
+    def handle_render_errors(errors)
+      logger.error(errors)
+
+      prince_errors = errors.scan(/^prince:\s(.*)$/)
+
+      if prince_errors.any?
+        raise Princely::RenderError.new(prince_errors)
+      end
     end
   end
 end

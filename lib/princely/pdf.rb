@@ -51,7 +51,6 @@ module Princely
       options = []
       options << "--input=html"
       options << "--server" if @server_flag
-      options << "--log=#{log_file}"
       options << "--media=#{media}" if media
       options << "--javascript" if @javascript
       options << @style_sheets
@@ -64,37 +63,53 @@ module Princely
     # it down the pipe using Rails.
     #
     def pdf_from_string(string, output_file = '-')
-      pdf = initialize_pdf_from_string(string, output_file, {:output_to_log_file => false})
-      pdf.close_write
+      pdf, errs = initialize_pdf_from_string(string, output_file, {:output_to_log_file => false})
+
       result = pdf.gets(nil)
-      pdf.close_read
+      errors = errs.gets(nil)
+
+      pdf.close
+      errs.close
+
       result.force_encoding('BINARY') if RUBY_VERSION >= "1.9"
+
+      if errors.present?
+        handle_render_errors(errors)
+      end
 
       result
     end
 
     def pdf_from_string_to_file(string, output_file)
-      pdf = initialize_pdf_from_string(string, output_file)
+      pdf, errs = initialize_pdf_from_string(string, output_file)
       pdf.close
+
+      errors = errs.gets(nil)
+      errs.close
+
+      if errors.present?
+        handle_render_errors(errors)
+      end
+
+      pdf
     end
 
     protected
     def initialize_pdf_from_string(string, output_file, options = {})
-      options = {:log_command => true, :output_to_log_file => true}.merge(options)
+      options = {:log_command => true}.merge(options)
       path = exe_path
       # Don't spew errors to the standard out...and set up to take IO
       # as input and output
       path << " --media=#{media}" if media
       path << " --silent - -o #{output_file}"
       path << " --javascript" if @javascript
-      path << " >> '#{log_file}' 2>> '#{log_file}'" if options[:output_to_log_file]
 
       log_command(path, string) if options[:log_command]
+      stdin, stdout, stderr, _ = Open3.popen3(path)
+      stdin.puts string
+      stdin.close
 
-      # Actually call the prince command, and pass the entire data stream back.
-      pdf = IO.popen(path, "w+")
-      pdf.puts string
-      pdf
+      [stdout, stderr]
     end
 
     def log_command(path, source=nil)
@@ -102,6 +117,20 @@ module Princely
       logger.info path
       #logger.debug source if source
       logger.info ''
+    end
+
+    def handle_render_errors(errors)
+      logger.error(errors)
+
+      prince_errors = errors.scan(/^prince:\s(.*)$/)
+
+      if prince_errors.any?
+        begin
+          raise Princely::RenderError.new(prince_errors)
+        rescue Princely::RenderError => exception
+          Appsignal.add_exception(exception)
+        end
+      end
     end
   end
 end

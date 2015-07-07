@@ -125,7 +125,11 @@ module Princely
       prince_errors = errors.scan(/^prince:\s(.*)$/)
 
       if prince_errors.any?
-        raise Princely::RenderError.new(prince_errors)
+        begin
+          raise Princely::RenderError.new(prince_errors)
+        rescue Princely::RenderError => exception
+          Appsignal.add_exception(exception)
+        end
       end
     end
   end

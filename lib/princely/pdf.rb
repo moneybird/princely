@@ -51,7 +51,6 @@ module Princely
       options = []
       options << "--input=html"
       options << "--server" if @server_flag
-      # options << "--log=#{log_file}"
       options << "--media=#{media}" if media
       options << "--javascript" if @javascript
       options << @style_sheets
@@ -84,6 +83,8 @@ module Princely
     def pdf_from_string_to_file(string, output_file)
       pdf, errs = initialize_pdf_from_string(string, output_file)
       pdf.close
+
+      errors = errs.gets(nil)
       errs.close
 
       if errors.present?
@@ -95,14 +96,13 @@ module Princely
 
     protected
     def initialize_pdf_from_string(string, output_file, options = {})
-      options = {:log_command => true, :output_to_log_file => true}.merge(options)
+      options = {:log_command => true}.merge(options)
       path = exe_path
       # Don't spew errors to the standard out...and set up to take IO
       # as input and output
       path << " --media=#{media}" if media
       path << " --silent - -o #{output_file}"
       path << " --javascript" if @javascript
-      path << " >> '#{log_file}' 2>> '#{log_file}'" if options[:output_to_log_file]
 
       log_command(path, string) if options[:log_command]
       stdin, stdout, stderr, _ = Open3.popen3(path)

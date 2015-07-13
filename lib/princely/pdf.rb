@@ -121,8 +121,7 @@ module Princely
 
     def handle_render_errors(errors)
       logger.error(errors)
-
-      prince_errors = errors.scan(/^prince:\s(.*)$/)
+      prince_errors = errors.scan(/^prince:\s((?!warning).*)$/)
 
       if prince_errors.any?
         raise Princely::RenderError.new(prince_errors)

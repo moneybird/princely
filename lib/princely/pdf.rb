@@ -1,3 +1,5 @@
+require 'open3'
+
 module Princely
   class Pdf
     attr_accessor :executable, :style_sheets, :logger, :log_file, :server_flag, :media, :javascript

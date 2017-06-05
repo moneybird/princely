@@ -1,6 +1,7 @@
 module Princely
   module AssetSupport
     def localize_html_string(html_string, asset_path = nil)
+      html_string = html_string.to_str
       # Make all paths relative, on disk paths...
       html_string.gsub!(".com:/",".com/") # strip out bad attachment_fu URLs
       html_string.gsub!( /src=["']+([^:]+?)["']/i ) do |m|
@@ -15,6 +16,7 @@ module Princely
 
     def asset_file_path(asset)
       # Remove /assets/ from generated names and try and find a matching asset
+      Rails.application.assets ||= Sprockets::Environment.new
       Rails.application.assets.find_asset(asset.gsub(%r{/assets/}, "")).try(:pathname) || asset
     end
   end

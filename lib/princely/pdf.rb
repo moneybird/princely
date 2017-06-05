@@ -1,8 +1,9 @@
 require 'open3'
+require 'timeout'
 
 module Princely
   class Pdf
-    attr_accessor :executable, :style_sheets, :logger, :log_file, :server_flag, :media, :javascript
+    attr_accessor :executable, :style_sheets, :logger, :log_file, :server_flag, :media, :javascript_flag, :timeout
 
     # Initialize method
     #
@@ -12,9 +13,9 @@ module Princely
         :executable => Princely.executable,
         :log_file => nil,
         :logger => nil,
-        :server_flag => false,
+        :server_flag => true,
         :media => nil,
-        :javascript => true
+        :javascript_flag => false
       }.merge(options)
       @executable = options[:path] ? Princely::Executable.new(options[:path]) : options[:executable]
       @style_sheets = ''
@@ -22,7 +23,8 @@ module Princely
       @logger = options[:logger]
       @server_flag = options[:server_flag]
       @media = options[:media]
-      @javascript = options[:javascript]
+      @javascript_flag = options[:javascript_flag]
+      @timeout = options[:timeout]
     end
 
     # Returns the instance logger or Princely default logger
@@ -54,7 +56,7 @@ module Princely
       options << "--input=html"
       options << "--server" if @server_flag
       options << "--media=#{media}" if media
-      options << "--javascript" if @javascript
+      options << "--javascript" if @javascript_flag
       options << @style_sheets
       options
     end
@@ -65,46 +67,53 @@ module Princely
     # it down the pipe using Rails.
     #
     def pdf_from_string(string, output_file = '-')
-      pdf, errs = initialize_pdf_from_string(string, output_file, {:output_to_log_file => false})
+      with_timeout do
+        pdf, errs = initialize_pdf_from_string(string, output_file, {:output_to_log_file => false})
 
-      result = pdf.gets(nil)
-      errors = errs.gets(nil)
+        result = pdf.gets(nil)
+        errors = errs.gets(nil)
 
-      pdf.close
-      errs.close
+        pdf.close
+        errs.close
 
-      result.force_encoding('BINARY') if RUBY_VERSION >= "1.9"
+        result.force_encoding('BINARY') if RUBY_VERSION >= "1.9"
 
-      if errors.present?
-        handle_render_errors(errors)
+        handle_render_errors(errors) unless errors.nil?
+
+        result
       end
-
-      result
     end
 
     def pdf_from_string_to_file(string, output_file)
-      pdf, errs = initialize_pdf_from_string(string, output_file)
-      pdf.close
+      with_timeout do
+        pdf, errs = initialize_pdf_from_string(string, output_file)
+        pdf.close
 
-      errors = errs.gets(nil)
-      errs.close
+        errors = errs.gets(nil)
+        errs.close
 
-      if errors.present?
-        handle_render_errors(errors)
+        handle_render_errors(errors) unless errors.nil?
+
+        pdf
       end
-
-      pdf
     end
 
-    protected
+  protected
+
+    def with_timeout(&block)
+      if timeout
+        Timeout.timeout(timeout, &block)
+      else
+        block.call
+      end
+    end
+
     def initialize_pdf_from_string(string, output_file, options = {})
       options = {:log_command => true}.merge(options)
       path = exe_path
       # Don't spew errors to the standard out...and set up to take IO
       # as input and output
-      path << " --media=#{media}" if media
       path << " --silent - -o #{output_file}"
-      path << " --javascript" if @javascript
 
       log_command(path, string) if options[:log_command]
       stdin, stdout, stderr, _ = Open3.popen3(path)
